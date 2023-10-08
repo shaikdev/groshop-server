@@ -2,11 +2,15 @@ package services
 
 import (
 	"context"
+	"os"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/shaikdev/groshop-server/db"
 	"github.com/shaikdev/groshop-server/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func CreateUser(body models.User) (primitive.ObjectID, error) {
@@ -19,9 +23,15 @@ func CreateUser(body models.User) (primitive.ObjectID, error) {
 
 }
 
-func GetUserById(id string) (models.User, error) {
-	_id, _ := primitive.ObjectIDFromHex(id)
-	filter := bson.M{"_id": _id}
+func GetUser(id string, email string) (models.User, error) {
+	filter := bson.M{}
+	if id != "" {
+		_id, _ := primitive.ObjectIDFromHex(id)
+		filter["_id"] = _id
+	}
+	if email != "" {
+		filter["email"] = email
+	}
 	var user models.User
 	err := db.User.FindOne(context.Background(), filter).Decode(&user)
 	if err != nil {
@@ -70,4 +80,34 @@ func DeleteUser(id string) int {
 func DeleteAllUser() int {
 	response, _ := db.User.DeleteMany(context.Background(), bson.D{{}})
 	return int(response.DeletedCount)
+}
+
+func HashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
+
+}
+
+func GenerateJwtToken(user models.User) (string, error) {
+	// Calculate the expiration time (30 days from now)
+	expirationTime := time.Now().Add(30 * 24 * time.Hour)
+
+	secretKey := os.Getenv("SECRET_KEY")
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"name": user.Name,
+		"_id":  user.Id,
+		"exp":  expirationTime.Unix(),
+	})
+
+	// Sign the token with your secret key
+	tokenString, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
+
 }

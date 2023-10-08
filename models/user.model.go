@@ -7,6 +7,7 @@ type User struct {
 	Name       string             `json:"name,omitempty"`
 	Email      string             `json:"email,omitempty"`
 	ProfilePic string             `json:"profile_pic"`
+	Password   string             `json:"password"`
 	Address    []*Address         `json:"address"`
 }
 
@@ -23,6 +24,19 @@ func (u *User) UserBodyCheck() (bool, string) {
 		return true, "Name is required"
 	} else if u.Email == "" {
 		return true, "Email is required"
+	} else if u.Password == "" {
+		return true, "Password is required"
+	} else {
+		return false, ""
 	}
-	return false, ""
+}
+
+func (u *User) LoginBodyCheck() (bool, string) {
+	if u.Email == "" {
+		return true, "Email is required"
+	} else if u.Password == "" {
+		return true, "Password is required"
+	} else {
+		return false, ""
+	}
 }

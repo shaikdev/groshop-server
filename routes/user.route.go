@@ -9,6 +9,8 @@ func UserRoute(r *mux.Router) {
 
 	userRouter := r.PathPrefix("/auth").Subrouter()
 
-	userRouter.HandleFunc("/create_user", controllers.UserCreate).Methods("POST")
+	userRouter.HandleFunc("/register", controllers.UserRegister).Methods("POST")
+
+	userRouter.HandleFunc("/login", controllers.UserLogin).Methods("POST")
 
 }

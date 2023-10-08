@@ -11,18 +11,15 @@ func Header(w http.ResponseWriter, methods string) {
 	w.Header().Set("Access-Control-Allow-Methods", methods)
 }
 
-func ResponseSuccess(w http.ResponseWriter, message string, status string, code int, data interface{}, count int) {
+func ResponseSuccess(w http.ResponseWriter, message string, status string, code int, args map[string]interface{}) {
 	w.WriteHeader(code)
 	response := map[string]interface{}{
 		"message":    message,
 		"status":     status,
 		"statusCode": code,
 	}
-	if data != nil {
-		response["data"] = data
-	}
-	if count != 0 {
-		response["count"] = count
+	for key, value := range args {
+		response[key] = value
 	}
 	_ = json.NewEncoder(w).Encode(response)
 }
