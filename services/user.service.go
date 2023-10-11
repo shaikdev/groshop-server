@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -59,27 +60,51 @@ func GetUsers() ([]primitive.M, error) {
 
 }
 
-func UpdateUser(id string, body models.User) error {
+func UpdateUser(id string, body models.User) (bool, error) {
 	_id, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": _id}
-	update := bson.M{}
+	update := updateUserField(body)
 	setBody := bson.M{"$set": update}
-	_, err := db.User.UpdateOne(context.Background(), filter, setBody)
-	return err
+	response, err := db.User.UpdateOne(context.Background(), filter, setBody)
+	if err != nil {
+		return false, err
+	}
+	if response.ModifiedCount == 0 {
+		return false, nil
+	} else {
+		return true, nil
+	}
 
 }
 
-func DeleteUser(id string) int {
+func updateUserField(body models.User) bson.M {
+	update := bson.M{}
+	if body.Email != "" {
+		update["email"] = body.Email
+	}
+	if body.Name != "" {
+		update["name"] = body.Name
+	}
+	return update
+}
+
+func DeleteUser(id string) (int, error) {
 	_id, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": _id}
-	response, _ := db.User.DeleteOne(context.Background(), filter)
-	return int(response.DeletedCount)
+	response, err := db.User.DeleteOne(context.Background(), filter)
+	if err != nil {
+		return 0, err
+	}
+	return int(response.DeletedCount), nil
 
 }
 
-func DeleteAllUser() int {
-	response, _ := db.User.DeleteMany(context.Background(), bson.D{{}})
-	return int(response.DeletedCount)
+func DeleteAllUser() (int, error) {
+	response, err := db.User.DeleteMany(context.Background(), bson.D{{}})
+	if err != nil {
+		return 0, err
+	}
+	return int(response.DeletedCount), nil
 }
 
 func HashPassword(password string) (string, error) {
@@ -89,6 +114,10 @@ func HashPassword(password string) (string, error) {
 	}
 	return string(hashedPassword), nil
 
+}
+
+func ComparePasswords(hashedPassword string, inputPassword string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(inputPassword))
 }
 
 func GenerateJwtToken(user models.User) (string, error) {
@@ -109,5 +138,18 @@ func GenerateJwtToken(user models.User) (string, error) {
 		return "", err
 	}
 	return tokenString, nil
+}
+
+func VerifyToken(tokenString string) (jwt.MapClaims, error) {
+	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("SECRET_KEY")), nil
+	})
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	}
+	return nil, fmt.Errorf("invalid token")
 
 }
