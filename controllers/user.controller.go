@@ -196,7 +196,7 @@ func DeleteUsers(w http.ResponseWriter, r *http.Request) {
 		helpers.ResponseErrorSender(w, helpers.USERS_DELETE_FAILED, helpers.FAILED, http.StatusInternalServerError)
 		return
 	} else if delete == 0 {
-		helpers.ResponseErrorSender(w, helpers.USERS_DELETE_FAILED, helpers.FAILED, http.StatusUnprocessableEntity)
+		helpers.ResponseErrorSender(w, helpers.USERS_DELETE_FAILED, helpers.FAILED, http.StatusBadRequest)
 		return
 	} else {
 		helpers.ResponseSuccess(w, helpers.USERS_DELETED_SUCCESSFULLY, helpers.SUCCESS, http.StatusOK, map[string]interface{}{})
