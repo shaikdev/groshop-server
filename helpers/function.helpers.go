@@ -32,3 +32,8 @@ func ResponseErrorSender(w http.ResponseWriter, message string, status string, c
 		"statusCode": code,
 	})
 }
+
+const (
+	FAILED  = "FAILED"
+	SUCCESS = "SUCCESS"
+)

@@ -10,7 +10,8 @@ import (
 func main() {
 
 	r := mux.NewRouter()
-	routes.UserRoute(r.PathPrefix("/api/v1").Subrouter())
+	routes.UserRoute(r.PathPrefix("/api/v1/auth").Subrouter())
+	routes.AddressRoute(r.PathPrefix("/api/v1/address").Subrouter())
 	http.Handle("/", r)
 	http.ListenAndServe(":8081", nil)
 

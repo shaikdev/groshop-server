@@ -9,7 +9,7 @@ import (
 
 func UserRoute(r *mux.Router) {
 
-	userRouter := r.PathPrefix("/auth").Subrouter()
+	userRouter := r
 
 	userRouter.HandleFunc("/register", controllers.UserRegister).Methods("POST")
 
