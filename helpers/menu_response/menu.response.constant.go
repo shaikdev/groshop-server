@@ -11,7 +11,7 @@ const (
 
 	// FAILURE
 	CREATE_FAILED      = "Menu created failed"
-	GET_FAILED         = "Menu get failed"
+	GET_FAILED         = "Menu not found"
 	GET_MANY_FAILED    = "Menus fetch failed"
 	EDIT_FAILED        = "Menus edit failed"
 	DELETE_FAILED      = "Menu delete failed"
