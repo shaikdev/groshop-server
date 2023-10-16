@@ -25,7 +25,7 @@ func CreateUser(body models.User) (primitive.ObjectID, error) {
 }
 
 func GetUser(id string, email string) (models.User, error) {
-	filter := bson.M{}
+	filter := bson.M{"isdeleted": false}
 	if id != "" {
 		_id, _ := primitive.ObjectIDFromHex(id)
 		filter["_id"] = _id
@@ -41,17 +41,17 @@ func GetUser(id string, email string) (models.User, error) {
 	return user, nil
 }
 
-func GetUsers() ([]primitive.M, error) {
-	response, err := db.User.Find(context.Background(), bson.D{{}})
+func GetUsers() ([]models.User, error) {
+	response, err := db.User.Find(context.Background(), bson.M{"isdeleted": false})
 	if err != nil {
-		return []primitive.M{}, err
+		return []models.User{}, err
 	}
-	var users []primitive.M
+	var users []models.User
 	for response.Next(context.Background()) {
-		var user bson.M
+		var user models.User
 		usersErr := response.Decode(&user)
 		if usersErr != nil {
-			return []primitive.M{}, usersErr
+			return []models.User{}, usersErr
 		}
 		users = append(users, user)
 
@@ -62,18 +62,14 @@ func GetUsers() ([]primitive.M, error) {
 
 func UpdateUser(id string, body models.User) (bool, error) {
 	_id, _ := primitive.ObjectIDFromHex(id)
-	filter := bson.M{"_id": _id}
+	filter := bson.M{"_id": _id, "isdeleted": false}
 	update := updateUserField(body)
 	setBody := bson.M{"$set": update}
-	response, err := db.User.UpdateOne(context.Background(), filter, setBody)
+	_, err := db.User.UpdateOne(context.Background(), filter, setBody)
 	if err != nil {
 		return false, err
 	}
-	if response.ModifiedCount == 0 {
-		return false, nil
-	} else {
-		return true, nil
-	}
+	return true, nil
 
 }
 
@@ -88,23 +84,26 @@ func updateUserField(body models.User) bson.M {
 	return update
 }
 
-func DeleteUser(id string) (int, error) {
+func DeleteUser(id string) (bool, error) {
 	_id, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": _id}
-	response, err := db.User.DeleteOne(context.Background(), filter)
+	setBody := bson.M{"$set": bson.M{"isdeleted": true}}
+	_, err := db.User.UpdateOne(context.Background(), filter, setBody)
 	if err != nil {
-		return 0, err
+		fmt.Println("err", err)
+		return false, err
 	}
-	return int(response.DeletedCount), nil
+	return true, nil
 
 }
 
-func DeleteAllUser() (int, error) {
-	response, err := db.User.DeleteMany(context.Background(), bson.D{{}})
+func DeleteAllUser() (bool, error) {
+	setBody := bson.M{"$set": bson.M{"isdeleted": true}}
+	_, err := db.User.UpdateMany(context.Background(), bson.D{{}}, setBody)
 	if err != nil {
-		return 0, err
+		return false, err
 	}
-	return int(response.DeletedCount), nil
+	return true, nil
 }
 
 func HashPassword(password string) (string, error) {
