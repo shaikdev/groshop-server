@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/shaikdev/groshop-server/helpers"
 	userresponse "github.com/shaikdev/groshop-server/helpers/user_response"
@@ -44,7 +45,9 @@ func UserRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.Password = passwordHash
-	// user.Address = map[strings]interface{}
+	user.IsDeleted = false
+	user.CreatedAt = time.Now()
+	user.ModifiedAt = time.Now()
 	createUser, createUserErr := services.CreateUser(user)
 	if createUserErr != nil {
 		helpers.ResponseErrorSender(w, userresponse.USER_CREATE_FAILED, helpers.FAILED, http.StatusInternalServerError)
@@ -92,7 +95,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		helpers.ResponseErrorSender(w, userresponse.FAILED_TOKEN_CREATION, helpers.FAILED, http.StatusBadRequest)
 		return
 	}
-	helpers.ResponseSuccess(w, userresponse.USER_LOGIN_SUCCESS, helpers.SUCCESS, http.StatusOK, map[string]interface{}{"data": getUser, "token": "Bearer " + token})
+	helpers.ResponseSuccess(w, userresponse.USER_LOGIN_SUCCESS, helpers.SUCCESS, http.StatusOK, map[string]interface{}{"data": getUser, "token": token})
 }
 
 func VerifyToken(next http.Handler) http.Handler {
@@ -165,20 +168,18 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		helpers.ResponseErrorSender(w, bodyCheckErr, helpers.FAILED, http.StatusBadRequest)
 		return
 	}
-	if isUpdate, err := services.UpdateUser(userId, user); err != nil {
+	if _, err := services.UpdateUser(userId, user); err != nil {
 		helpers.ResponseErrorSender(w, userresponse.USER_EDIT_FAILED, helpers.FAILED, http.StatusInternalServerError)
 		return
-	} else if !isUpdate {
-		helpers.ResponseErrorSender(w, userresponse.USER_EDIT_FAILED, helpers.FAILED, http.StatusBadRequest)
+	}
+
+	if getUser, getUserErr := services.GetUser(userId, ""); getUserErr != nil {
+		helpers.ResponseErrorSender(w, userresponse.USER_FETCH_FAILED, helpers.FAILED, http.StatusNotFound)
 		return
 	} else {
-		if getUser, getUserErr := services.GetUser(userId, ""); getUserErr != nil {
-			helpers.ResponseErrorSender(w, userresponse.USER_FETCH_FAILED, helpers.FAILED, http.StatusNotFound)
-			return
-		} else {
-			helpers.ResponseSuccess(w, userresponse.USER_EDIT_SUCCESSFULLY, helpers.SUCCESS, http.StatusOK, map[string]interface{}{"data": getUser})
-		}
+		helpers.ResponseSuccess(w, userresponse.USER_EDIT_SUCCESSFULLY, helpers.SUCCESS, http.StatusOK, map[string]interface{}{"data": getUser})
 	}
+
 }
 
 func DeleteUserById(w http.ResponseWriter, r *http.Request) {
@@ -190,15 +191,12 @@ func DeleteUserById(w http.ResponseWriter, r *http.Request) {
 		helpers.ResponseErrorSender(w, userresponse.USER_GET_FAILED, helpers.FAILED, http.StatusNotFound)
 		return
 	} else {
-		if deleteUser, deleteFailed := services.DeleteUser(userId); deleteFailed != nil {
+		if _, deleteFailed := services.DeleteUser(userId); deleteFailed != nil {
 			helpers.ResponseErrorSender(w, userresponse.USER_DELETE_FAILED, helpers.FAILED, http.StatusInternalServerError)
 			return
-		} else if deleteUser == 0 {
-			helpers.ResponseErrorSender(w, userresponse.USER_DELETE_FAILED, helpers.FAILED, http.StatusBadRequest)
-			return
-		} else {
-			helpers.ResponseSuccess(w, userresponse.USER_DELETED_SUCCESSFULLY, helpers.SUCCESS, http.StatusOK, map[string]interface{}{})
 		}
+		helpers.ResponseSuccess(w, userresponse.USER_DELETED_SUCCESSFULLY, helpers.SUCCESS, http.StatusOK, map[string]interface{}{})
+
 	}
 }
 
@@ -206,14 +204,10 @@ func DeleteUsers(w http.ResponseWriter, r *http.Request) {
 	helpers.Header(w, "DELETE")
 	defer r.Body.Close()
 
-	if delete, err := services.DeleteAllUser(); err != nil {
+	if _, err := services.DeleteAllUser(); err != nil {
 		helpers.ResponseErrorSender(w, userresponse.USERS_DELETE_FAILED, helpers.FAILED, http.StatusInternalServerError)
 		return
-	} else if delete == 0 {
-		helpers.ResponseErrorSender(w, userresponse.USERS_DELETE_FAILED, helpers.FAILED, http.StatusBadRequest)
-		return
-	} else {
-		helpers.ResponseSuccess(w, userresponse.USERS_DELETED_SUCCESSFULLY, helpers.SUCCESS, http.StatusOK, map[string]interface{}{})
 	}
+	helpers.ResponseSuccess(w, userresponse.USERS_DELETED_SUCCESSFULLY, helpers.SUCCESS, http.StatusOK, map[string]interface{}{})
 
 }

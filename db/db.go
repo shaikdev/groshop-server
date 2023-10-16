@@ -13,10 +13,12 @@ import (
 
 const dbName string = "gropshop"
 const userModel string = "user"
+const menuModel string = "menu"
 
 // TODO: important thing
 
 var User *mongo.Collection
+var Menu *mongo.Collection
 
 // TODO: connect with MongoDB
 
@@ -41,6 +43,7 @@ func init() {
 	defer fmt.Println("MongoDB connected successfully")
 
 	User = client.Database(dbName).Collection(userModel)
+	Menu = client.Database(dbName).Collection(menuModel)
 
 	fmt.Println("Collection instance is ready")
 
