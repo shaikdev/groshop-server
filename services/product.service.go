@@ -73,7 +73,7 @@ func DeleteProducts() (bool, error) {
 	filter := bson.M{"isdeleted": false}
 	update := bson.M{"isdeleted": true}
 	setBody := bson.M{"$set": update}
-	_, err := db.Product.UpdateOne(context.Background(), filter, setBody)
+	_, err := db.Product.UpdateMany(context.Background(), filter, setBody)
 	if err != nil {
 		return false, err
 	}
